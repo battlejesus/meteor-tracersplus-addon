@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "tracersplus",
+  "version": "${version}",
+  "name": "Tracers+",
+  "description": "Tracers+ addon for Meteor Client",
+  "authors": [
+    "Anonymous"
+  ],
+  "contact": {
+    "sources": "https://github.com/battlejesus/meteor-tracersplus-addon"
+  },
+  "icon": "assets/tracersplus/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "meteor": [
+      "com.tracersplus.addon.TracersPlusAddon"
+    ]
+  },
+  "mixins": [
+    "tracersplus.mixins.json"
+  ],
+  "custom": {
+    "meteor-client:color": "0,255,0",
+    "modmenu": {
+      "parent": {
+        "id": "meteor-client"
+      }
+    }
+  },
+  "depends": {
+    "java": ">=${jdk_version}",
+    "minecraft": "${minecraft_version}",
+    "meteor-client": "*"
+  }
+}
