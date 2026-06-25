@@ -1,3 +1,5 @@
+# This is a open source addon for Meteor Client.
+
 ## Enhanced Tracers
 
 This feature updates the original `Tracers` module by resolving target identification issues and adding new filtering options.
