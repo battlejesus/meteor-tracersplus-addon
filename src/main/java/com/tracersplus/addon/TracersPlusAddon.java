@@ -12,7 +12,7 @@ public class TracersPlusAddon extends MeteorAddon {
 
     @Override
     public void onInitialize() {
-        LOG.info("Tracers+ addon yükleniyor...");
+        LOG.info("Tracers+ addon loading...");
 
         Modules.get().add(new TracersPlus());
     }
