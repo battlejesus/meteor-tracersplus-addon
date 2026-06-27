@@ -18,10 +18,10 @@ import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
 import meteordevelopment.meteorclient.systems.config.Config;
 import meteordevelopment.meteorclient.systems.modules.render.Freecam;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.phys.Vec2;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.util.math.Vec2f;
 import org.joml.Vector2f;
 import org.joml.Vector3d;
 
@@ -233,27 +233,27 @@ public class TracersPlus extends Module {
 
     private boolean shouldBeIgnored(Entity entity) {
         if (justFriends.get()) {
-            if (!(entity instanceof Player && Friends.get().isFriend((Player) entity))) return true;
+            if (!(entity instanceof PlayerEntity && Friends.get().isFriend((PlayerEntity) entity))) return true;
         }
 
-        return !PlayerUtils.isWithin(entity, maxDist.get()) || (!Modules.get().isActive(Freecam.class) && entity == mc.player) || !entities.get().contains(entity.getType()) || (ignoreSelf.get() && entity == mc.player) || (ignoreFriends.get() && entity instanceof Player && Friends.get().isFriend((Player) entity)) || (!showInvis.get() && entity.isInvisible()) || !EntityUtils.isInRenderDistance(entity);
+        return !PlayerUtils.isWithin(entity, maxDist.get()) || (!Modules.get().isActive(Freecam.class) && entity == mc.player) || !entities.get().contains(entity.getType()) || (ignoreSelf.get() && entity == mc.player) || (ignoreFriends.get() && entity instanceof PlayerEntity && Friends.get().isFriend((PlayerEntity) entity)) || (!showInvis.get() && entity.isInvisible()) || !EntityUtils.isInRenderDistance(entity);
     }
 
     private Color getEntityColor(Entity entity) {
         Color color;
 
         if (distance.get()) {
-            if (friendOverride.get() && entity instanceof Player player && Friends.get().isFriend(player)) {
+            if (friendOverride.get() && entity instanceof PlayerEntity player && Friends.get().isFriend(player)) {
                 color = Config.get().friendColor.get();
             } else color = EntityUtils.getColorFromDistance(entity);
-        } else if (entity instanceof Player player) {
+        } else if (entity instanceof PlayerEntity player) {
             if (Friends.get().isFriend(player)) {
                 color = friendColor.get();
             } else {
                 color = playersColor.get();
             }
         } else {
-            color = switch (entity.getType().getCategory()) {
+            color = switch (entity.getType().getSpawnGroup()) {
                 case CREATURE -> animalsColor.get();
                 case WATER_AMBIENT, WATER_CREATURE, UNDERGROUND_WATER_CREATURE, AXOLOTLS -> waterAnimalsColor.get();
                 case MONSTER -> monstersColor.get();
@@ -267,17 +267,17 @@ public class TracersPlus extends Module {
 
     @EventHandler
     private void onRender(Render3DEvent event) {
-        if (mc.options.hideGui || style.get() == TracerStyle.Offscreen) return;
+        if (mc.options.hudHidden || style.get() == TracerStyle.Offscreen) return;
         count = 0;
 
-        for (Entity entity : mc.level.entitiesForRendering()) {
+        for (Entity entity : mc.world.getEntities()) {
             if (shouldBeIgnored(entity)) continue;
 
             Color color = getEntityColor(entity);
 
-            double x = entity.xo + (entity.getX() - entity.xo) * event.tickDelta;
-            double y = entity.yo + (entity.getY() - entity.yo) * event.tickDelta;
-            double z = entity.zo + (entity.getZ() - entity.zo) * event.tickDelta;
+            double x = entity.lastRenderX + (entity.getX() - entity.lastRenderX) * event.tickDelta;
+            double y = entity.lastRenderY + (entity.getY() - entity.lastRenderY) * event.tickDelta;
+            double z = entity.lastRenderZ + (entity.getZ() - entity.lastRenderZ) * event.tickDelta;
 
             double height = entity.getBoundingBox().maxY - entity.getBoundingBox().minY;
             if (target.get() == Target.Head) y += height;
@@ -292,12 +292,12 @@ public class TracersPlus extends Module {
 
     @EventHandler
     public void onRender2D(Render2DEvent event) {
-        if (mc.options.hideGui || style.get() != TracerStyle.Offscreen) return;
+        if (mc.options.hudHidden || style.get() != TracerStyle.Offscreen) return;
         count = 0;
 
         Renderer2D.COLOR.begin();
 
-        for (Entity entity : mc.level.entitiesForRendering()) {
+        for (Entity entity : mc.world.getEntities()) {
             if (shouldBeIgnored(entity)) continue;
 
             Color color = getEntityColor(entity);
@@ -305,15 +305,15 @@ public class TracersPlus extends Module {
             if (blinkOffscreen.get())
                 color.a = (int) (color.a * getAlpha());
 
-            Vec2 screenCenter = new Vec2(mc.getWindow().getWidth() / 2.f, mc.getWindow().getHeight() / 2.f);
+            Vec2f screenCenter = new Vec2f(mc.getWindow().getWidth() / 2.f, mc.getWindow().getHeight() / 2.f);
 
-            Vector3d projection = new Vector3d(entity.xo, entity.yo, entity.zo);
+            Vector3d projection = new Vector3d(entity.lastRenderX, entity.lastRenderY, entity.lastRenderZ);
             boolean projSucceeded = NametagUtils.to2D(projection, 1, false, false);
 
             if (projSucceeded && projection.x > 0.f && projection.x < mc.getWindow().getWidth() && projection.y > 0.f && projection.y < mc.getWindow().getHeight())
                 continue;
 
-            projection = new Vector3d(entity.xo, entity.yo, entity.zo);
+            projection = new Vector3d(entity.lastRenderX, entity.lastRenderY, entity.lastRenderZ);
             NametagUtils.to2D(projection, 1, false, true);
 
             Vector2f angle = vectorAngles(new Vector3d(screenCenter.x - projection.x, screenCenter.y - projection.y, 0));
